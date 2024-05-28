@@ -29,6 +29,7 @@ import { add, checkmark, trash } from 'ionicons/icons';
 import { addIcons } from 'ionicons';
 import { FormsModule } from '@angular/forms';
 import { toast } from 'ngx-sonner';
+import { AlertController } from '@ionic/angular';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCrncOoK7RLzg3mVzqH9gpby9sMU076X-I",
@@ -59,7 +60,7 @@ export class HomePage {
   app = initializeApp(firebaseConfig);
   db = getDatabase(this.app);
   
-  constructor() {
+  constructor(public alertController: AlertController) {
     addIcons({ add, checkmark, trash });
     
     const dataListRef = ref(this.db, 'tasks');
@@ -127,20 +128,33 @@ export class HomePage {
     setTimeout( () => { slidingItem.close() }, 2);
   }
 
-  removeTask(slidingItem: IonItemSliding, task: Task) {
-    /*task.status = "removed";
-    let index = this.tasks.indexOf(task);
-    if (index > -1)
-      this.tasks.splice(index, 1);*/
-    remove(ref(this.db, 'tasks/' + task.id)).then( () => {
-      // alert("Data deleted succesfully");
-      toast.success('Task removed successfully');
-    })
-    .catch( (error) => {
-      alert("Error");
-      console.log(error);
-    })
-    setTimeout( () => { slidingItem.close() }, 2);
+  async removeTask(slidingItem: IonItemSliding, task: Task) {
+    const alert = await this.alertController.create({
+      header: 'Remove task',
+      message: 'Are you sure you want to remove this task?',
+      buttons: [
+        {
+          text: 'Cancel',
+        },
+        {
+          text: 'Yes, remove it!',
+          handler: () => {
+            remove(ref(this.db, 'tasks/' + task.id)).then( () => {
+              toast.success('Task removed successfully');
+            })
+            .catch( (error) => {
+              toast.error('Error removing task');
+              console.log(error);
+            })
+            setTimeout( () => { slidingItem.close() }, 2);
+          }
+        }
+      ]  
+    });
+
+    await alert.present();
+    // let result = await alert.onDidDismiss();    
+    // console.log(result);
   }
 
   getTaskFromFirebase() {
